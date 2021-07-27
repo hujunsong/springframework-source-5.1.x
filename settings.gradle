@@ -33,4 +33,5 @@ include 'spring-source-study'
 include 'spring-mymvc'
 include 'spring-mymvc-annotation'
 include 'spring-mybatis'
+include 'my-test'
 

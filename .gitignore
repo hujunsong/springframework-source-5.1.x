@@ -38,3 +38,6 @@ out
 test-output
 atlassian-ide-plugin.xml
 .gradletasknamecache
+
+# 添加测试工程的构建git忽略目录
+/my-test/build
