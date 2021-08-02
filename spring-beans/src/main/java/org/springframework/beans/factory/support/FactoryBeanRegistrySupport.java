@@ -100,8 +100,9 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 	 * @see org.springframework.beans.factory.FactoryBean#getObject()
 	 */
 	// 注意：getObject方法
-	// 		如果对应的bean是单例的，会使用factoryBeanObjectCache进行单实例bean的缓存。
+	// 		如果对应的bean是单例的，会使用factoryBeanObjectCache进行单实例bean的缓存（注册式单例）。
 	//	    如果不是单例的，每次都会调用getObject进行重新获取。
+	// 登记式单例并没有去改变类，他所做的就是起到一个登记的作用，如果没有登记，他就给你登记，并把生成的实例保存起来，下次你要用的时候直接给你
 	protected Object getObjectFromFactoryBean(FactoryBean<?> factory, String beanName, boolean shouldPostProcess) {
 		// 如果是单例的
 		if (factory.isSingleton() && containsSingleton(beanName)) {

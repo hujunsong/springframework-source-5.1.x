@@ -451,6 +451,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * populates the bean instance, applies post-processors, etc.
 	 * @see #doCreateBean
 	 */
+	// 创建bean
 	@Override
 	protected Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException {
@@ -1415,7 +1416,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param mbd the bean definition for the bean
 	 * @param bw the BeanWrapper with bean instance
 	 */
+	// popular : adj. 受喜爱的;受欢迎的;当红的;通俗的;大众化的;普遍的;大众的;流行的
+	// populate : vt.  居住于;生活于;构成…的人口;迁移;移居;殖民于;(给文件)增添数据，输入数据
 	@SuppressWarnings("deprecation")  // for postProcessPropertyValues
+	// 处理依赖注入
 	protected void populateBean(String beanName, RootBeanDefinition mbd, @Nullable BeanWrapper bw) {
 		if (bw == null) {
 			if (mbd.hasPropertyValues()) {

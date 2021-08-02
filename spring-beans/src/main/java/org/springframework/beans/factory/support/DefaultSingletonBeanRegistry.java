@@ -213,6 +213,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * （2）构造器注入方式产生的循环引用无法解决，因为无法实例化出 early singleton bean 实例。
 	 * （3）非单例模式的循环引用也无法解决，因为 Spring 框架不会缓存非单例的 bean 实例。
 	 */
+	// 解决循环依赖
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// 根据beanName从单实例对象缓存中获取单例对象(singletonObjects为一个ConcurrentHashMap，就是用来保存所有的单实例Bean的,

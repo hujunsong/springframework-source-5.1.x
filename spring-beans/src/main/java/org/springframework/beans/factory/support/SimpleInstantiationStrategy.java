@@ -56,11 +56,11 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		return currentlyInvokedFactoryMethod.get();
 	}
 
-
+	// 产生代码对象
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
-		// 如果没有覆写的方法，可以直接实例化
+		// 如果没有覆写的方法，可以直接实例化,不需要cglib
 		if (!bd.hasMethodOverrides()) {
 			// 实例化对象使用的构造方法
 			Constructor<?> constructorToUse;

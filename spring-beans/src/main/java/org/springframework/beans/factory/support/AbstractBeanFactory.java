@@ -200,22 +200,31 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 *
 	 * doGetBean(name, null, null, false);
 	 */
+	// 那么Spring对单例的底层实现，到底是饿汉式单例还是懒汉式单例呢？呵呵，都不是。Spring框架对单例的支持是采用单例注册表的方式进行实现的
 	@SuppressWarnings("unchecked")
 	protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
 			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
 		// 获取真正的BeanName。主要包括：(1) 去掉FactoryBean名称前面的&前缀；(2) bean别名解析；
+		// 该方法作用：1、 如果是FactoryBean,会去掉Bean开头的&符号
+		// 2、能存在传入别名且别名存在多重映射的情况，这里会返回最终的名字，如存在多层别名映射A->B->C->D，传入D,最终会返回A
 		final String beanName = transformedBeanName(name);
 		Object bean;
 
+		// 尝试从缓存中获取Bean，通过三级缓存和提前曝光解决循环依赖
 		// 先尝试从缓存中获取单实例Bean，如果能获取到，说明已经被创建过
 		//   注意：如果是通过FactoryBean方式创建对象。在根据名称获取目标bean对象(非FactoryBean实例)时，此处返回的sharedInstance是FactoryBean对象
+		//这里先尝试从缓存中获取，若获取不到，就走下面的创建
+		// 特别注意的是：这里面走创建（发现是个new的），就加入进缓存里面了 if (newSingleton) {addSingleton(beanName, singletonObject);}   缓存的字段为全局的Map:singletonObjects
 		Object sharedInstance = getSingleton(beanName);
 		/**
 		 * 当组件实现了FactoryBean接口，并重写了getObject方法时。在从容器中获取bean的时候，sharedInstance就是容器中返回的bean对象
 		 * 此时sharedInstance不为空，就会调用getObjectForBeanInstance方法，这个方法内部会调用子类重写的getObject方法.
  		 */
+		// 如果是单例（从单例map容器中取出），scope="singleton",容器为ConcurrentHashMap
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
+				// 这里虽然只是一句日志，但是能说明用意。
+				// 若条件为true，表示这个Bean虽然在缓存里，但是还并没有完全被初始化（循环引用）
 				if (isSingletonCurrentlyInCreation(beanName)) {
 					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
 							"' that is not fully initialized yet - a consequence of a circular reference");
@@ -225,15 +234,22 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 			}
 			// 获取bean对象，包括使用FactoryBean来创建bean的逻辑.
+			// 在getBean方法中，getObjectForBeanInstance是个频繁使用的方法。因此为了更好的知道细节，下面会详解这个方法的
+			// 其实简单理解就是处理FactoryBean的getObject()方法
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
+		// 已有单例容器中没取到
 		else {
-			// 如果当前创建的是单实例类型的bean，则尝试解决循环依赖，此处仅仅只是一个校验；如果当前的多实例bean正在创建中，而且存在循环依赖，直接抛出异常
+			// 先判断是否是原型模式正在创建，scope="prototype"，容器为ThreadLocal
+			// 如果当前创建的是单实例类型的bean，则尝试解决循环依赖，此处仅仅只是一个校验；如果当前的多实例bean正在创建中，而且存在循环依赖，直接抛出异常 -- ?
+			// 原型对象不允许循环创建，如果是原型对象正在创建，那就抛异常
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 			// 获取Bean的父工厂？ 在Spring和SpringMVC整合之后，会存在着父子容器问题
 			// TODO 父子容器处理
+			// 这一步也是必须要做的，若存在父容器，得看看父容器是否实例化过它了。避免被重复实例化（若父容器被实例化，就以父容器的为准）
+			// 这就是为何，我们扫描controller，哪怕不加排除什么的，也不会出问题的原因~，因为Spring中的单例Bean只会被实例化一次（即使父子容器都扫描了）
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -304,6 +320,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// bean定义如果是单例的，则调用createBean方法进行单实例bean的创建.
+				// 从这里开始，就正式开始着手创建这个Bean的实例了~~~~
 				if (mbd.isSingleton()) {
 					// 此处的lambda表达式为：ObjectFactory的getObject方法
 					sharedInstance = getSingleton(beanName, () -> {
@@ -312,6 +329,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							 * 创建对象并初始化，Spring用来创建Bean实例的核心方法
 							 *  此处调用的子类AbstractAutowireCapableBeanFactory的createBean方法.
 							 */
+							// 这是创建Bean的核心方法，非常重要~~~~~~~~~~~~~~~
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
@@ -350,7 +368,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
-				// 未明确指定将要创建的bean是单例的还是多例的
+				// 未明确指定将要创建的bean是单例的还是多例的，获取其它Scope
+				//singleton
+				//             默认，一个Spring IoC容器中只能有一个bean实例，容器启动时初始化
+				//prototype
+				//             在一个Spring IoC容器中可以有多个bean实例，每次被调用gettor时初始化
+				//request
+				//             bean实例的生命周期只在一次HTTP请求中，即每次HTTP请求都创建一个新的bean实例
+				//            只能在WebApplicationContext上下文中配置，如XmlWebApplicationContext
+				//session
+				//             bean实例的生命周期在HTTP session中
+				//            只能在WebApplicationContext上下文中配置，如XmlWebApplicationContext
+				//global session
+				//             bean实例的生命周期在全局的HTTP session中（典型地，跨portlet）
+				//             只能在WebApplicationContext上下文中配置，如XmlWebApplicationContext
+				//application
+				//             bean实例的生命周期在ServletContext中
+				//             只能在WebApplicationContext上下文中配置，如XmlWebApplicationContext
 				else {
 					String scopeName = mbd.getScope();
 					// 从bean定义中获取bean的scope信息，如果bean的scope信息为null，也就是随意设置的scope，直接抛出异常
