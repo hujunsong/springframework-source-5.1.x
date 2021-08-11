@@ -151,6 +151,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	 * <p>Callers will see exactly the exception thrown by the target,
 	 * unless a hook method throws an exception.
 	 */
+	//在invoke方法中，核心内容是获取拦截器链，如果拦截器链为空，则直接调用目标方法，如果拦截器链不为空则先调用拦截器链，再对目标方法进行调用。
 	@Override
 	@Nullable
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -161,10 +162,12 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 		Object target = null;
 
 		try {
+			//如果目标对象没有实现object的基本方法equals,则返回
 			if (!this.equalsDefined && AopUtils.isEqualsMethod(method)) {
 				// The target does not implement the equals(Object) method itself.
 				return equals(args[0]);
 			}
+			//如果目标对象没有实现object的基本方法hashCode,则返回
 			else if (!this.hashCodeDefined && AopUtils.isHashCodeMethod(method)) {
 				// The target does not implement the hashCode() method itself.
 				return hashCode();
@@ -189,10 +192,12 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 			// Get as late as possible to minimize the time we "own" the target,
 			// in case it comes from a pool.
+			//越晚越好，尽量缩短我们“拥有”目标的时间，以防它来自池。
 			target = targetSource.getTarget();
 			Class<?> targetClass = (target != null ? target.getClass() : null);
 
 			// Get the interception chain for this method.
+			// 首先是获得拦截器链,为环绕通知做准备
 			List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 
 			// Check whether we have any advice. If we don't, we can fallback on direct

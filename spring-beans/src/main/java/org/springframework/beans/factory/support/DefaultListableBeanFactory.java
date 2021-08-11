@@ -857,7 +857,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		/**
 		 * 上一步for循环中已经创建完了所有的单实例Bean，这个for循环中，会拿出所有的单实例Bean，
-		 *   然后遍历，判断单实例bean是否实现了SmartInitializingSingleton接口，如果实现了该接口，
+		 *   然后遍历，判断单实例bean是否实现了SmartInitializingSingleton接口，如果实现了该接口，（AOP的AnnotationAwareAspectJAutoProxyCreator类实现了这个接口）
 		 *   则调用单实例Bean的afterSingletonsInstantiated方法
 		 */
 		for (String beanName : beanNames) {

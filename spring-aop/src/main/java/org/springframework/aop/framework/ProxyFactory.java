@@ -93,6 +93,7 @@ public class ProxyFactory extends ProxyCreatorSupport {
 	 * (if necessary for proxy creation).
 	 * @return the proxy object
 	 */
+	// 与IOC的BeanFactory.getBean异曲同工
 	public Object getProxy() {
 		return createAopProxy().getProxy();
 	}

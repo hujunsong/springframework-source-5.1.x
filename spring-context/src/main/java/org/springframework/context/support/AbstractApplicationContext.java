@@ -605,6 +605,7 @@ public abstract class AbstractApplicationContext
 				 *
 				 *   其中也涉及到了排序过程
 				 */
+				// 提供AOP支持（Bean创建后包装成增强器（Advisor），增强器包装成拦截器MethodInterceptor）
 				registerBeanPostProcessors(beanFactory);
 
 				/**

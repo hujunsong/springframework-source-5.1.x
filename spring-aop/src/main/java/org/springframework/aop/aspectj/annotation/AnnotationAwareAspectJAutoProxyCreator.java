@@ -46,6 +46,30 @@ import org.springframework.util.Assert;
  * @since 2.0
  * @see org.springframework.aop.aspectj.annotation.AspectJAdvisorFactory
  */
+
+/**
+ * 【AOP入口】
+ * 1、@EnableAspectJAutoProxy ： 开启AOP支持
+ * 2、@Import(AspectJAutoProxyRegistrar.class) ：通过Import注解给容器中导入AspectJAutoProxyRegistrar组件.
+ * 3、AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(registry); 如果有必要则给容器中注册一个AspectJAnnotationAutoProxyCreator组件.
+ *
+ * 【类结构图】
+ * AspectJAwareAdvisorAutoProxyCreator : 公开了AspectJ的调用上下文，并弄清楚来自同一切面的多个Advisor在AspectJ中的优先级规则。
+ * AbstractAdvisorAutoProxyCreator : 通用自动代理创建器，它基于检测到的每个顾问程序为特定bean构建AOP代理。
+ * AbstractAutoProxyCreator : 扩展了 ProxyProcessorSupport，实现了SmartInstantiationAwareBeanPostProcessor、BeanFactoryAware 接口，是BeanPostProcessor 实现，
+ * 								该实现使用AOP代理包装每个合格的bean，并在调用bean本身之前委派给指定的拦截器。
+ *     BeanFactoryAware : 实现了该接口的Bean可以知道它属于那个 BeanFactory，Bean可以通过Spring容器查找它的协同者（依赖查找），
+ * 						但大多数的Bean是通过构造器参数和Bean方法（依赖注入）来获取它的协同者。
+ *     BeanPostProcessor ：工厂钩子，允许自定义修改新的bean实例。例如，检查标记接口或使用代理包装bean。如果我们需要在Spring容器中完成Bean的实例化，
+ * 						配置和其初始化前后添加一些自己的逻辑处理，我们就可以定义一个或多个BeanPostProcessor接口的实现，然后注册到容器中。
+ * InstantiationAwareBeanPostProcessor : BeanPostProcessor 的子接口，它添加了实例化之前的回调，以及实例化之后但设置了显式属性或自动装配之前的回调。
+ * 										它内部提供了3个方法，再加上BeanPostProcessor接口内部的2个方法，实现这个接口需要实现5个方法。
+ * 										InstantiationAwareBeanPostProcessor 接口的主要作用在于目标对象的实例化过程中需要处理的事情，
+ * 										包括实例化对象的前后过程以及实例的属性设置。
+ * SmartInstantiationAwareBeanPostProcessor : InstantiationAwareBeanPostProcessor 接口的扩展，多出了3个方法，添加了用于预测已处理bean的最终类型的回调，
+ * 									再加上父接口的5个方法，所以实现这个接口需要实现8个方法，主要作用也是在于目标对象的实例化过程中需要处理的事情。
+ * 总之：AspectJAwareAdvisorAutoProxyCreator为 AspectJ 切面类创建自动代理。
+ */
 @SuppressWarnings("serial")
 public class AnnotationAwareAspectJAutoProxyCreator extends AspectJAwareAdvisorAutoProxyCreator {
 
